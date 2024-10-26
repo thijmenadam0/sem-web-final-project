@@ -6,20 +6,55 @@
 import re
 import csv
 import os
+import argparse
 import random
 import pandas as pd
 import numpy as np
 
 from datetime import datetime
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeRegressor
+from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import mean_squared_error, root_mean_squared_error
 
 np.random.seed(42)
 random.seed(42)
+
+
+def create_arg_parser():
+    '''Creates an argument parser to read the command line arguments.
+    This includes subparsers for the different models.
+    '''
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-p", "--print_pred", action="store_true",
+                        help="Also prints the predicted and actual values.")
+    
+    subparser = parser.add_subparsers(dest="algorithm", required=True,
+                                      help="Choose the classifying algorithm to use")
+    
+    svr_parser = subparser.add_parser("svr",
+                                      help="Use Support Vector Regression as Regression model")
+    
+    dt_parser = subparser.add_parser("dt",
+                                      help="Use Decision Tree Regression as Regression model")
+    
+    rf_parser = subparser.add_parser("rf",
+                                      help="Use Random Forest Regression as Regression model")
+    
+    lr_parser = subparser.add_parser("lr",
+                                     help="Use Logistic Regression as Regression model")
+
+    args = parser.parse_args()
+
+
+    return args
 
 
 def months_difference(date1, date2):
@@ -131,25 +166,19 @@ def create_tfidf_data(df):
     pass
 
 
-def keyword_counter(df):
-    '''Counts the amount of keywords per item'''
-    keywords_list = ["Enemies to Lovers", "Friends to Lovers", "Rivals to Lovers", "Eventual Romance",
-                     "enemies to lovers", "Friends to Enemies to Lovers"]
+def print_prediction(prediction, actual):
+    '''Prints the predicted value and the actual value of the regression models.'''
 
-    # Initialize a dictionary to store the counts for each keyword
-    keyword_counts = {keyword: 0 for keyword in keywords_list}
+    prediction = list(prediction)
+    actual = list(actual)
 
-    # Go through the 'keywords' column and count occurrences of each keyword
-    for entry in df['keywords']:
-        for keyword in keywords_list:
-            keyword_counts[keyword] += entry.count(keyword)
-    
-    print(keyword_counts)
-
-    return keyword_counts
+    for i in range(len(prediction)):
+        print(f'predicted value: {int(prediction[i])} ' + '\t\t\t' + f'actual value: {actual[i]}')
 
 
 def main():
+    args = create_arg_parser()
+
     if not os.path.exists("data/data_rep.csv"):
         read_write_data()
 
@@ -160,44 +189,80 @@ def main():
     
     tfidf_df = pd.read_csv("data/tfidf_rep.csv")
 
-    # keyword_counter(df)
-
     X = df.iloc[:, [4, 8, 11]]
     Z = tfidf_df.iloc[:, [5, 6, 7]]
-
-    print(X, Z)
 
     X = pd.concat([X, Z], axis=1)
     y = df["kudos"]  # Creating a target variable
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    model = DecisionTreeRegressor(random_state=42, min_samples_leaf=30, splitter="random")
-    model.fit(X_train, y_train)
+    scaler = StandardScaler().fit(X_train)
+    scaler_test = StandardScaler().fit(X_test)
 
-    y_pred = model.predict(X_test)
-    y_test = y_test.to_numpy()
+    X_scaled = scaler.transform(X_train)
+    X_scaled_test = scaler_test.transform(X_test)
 
-    mse = mean_squared_error(y_test, y_pred)
-    rmse = root_mean_squared_error(y_test, y_pred)
-    # for i in range(len(y_test)):
-    #    print('Actual value:', y_test[i], 'Predicted value:', y_pred[i], "difference:", y_test[i] - y_pred[i])
-    
-    print("Decision Trees:")
-    print(f'Mean Squared Error: {round(mse, 3)}')
-    print(f'Root Mean Squared Error: {round(rmse, 3)}')
-    print()
 
-    rf_model = RandomForestRegressor(n_estimators=500, random_state=42)
-    rf_model.fit(X_train, y_train)
-    y_pred_rf = rf_model.predict(X_test)
+    if args.algorithm == "dt":
+        model = DecisionTreeRegressor(random_state=42, min_samples_leaf=30, splitter="random")
+        model.fit(X_train, y_train)
 
-    mse_rf = mean_squared_error(y_test, y_pred_rf)
-    rmse_rf = root_mean_squared_error(y_test, y_pred_rf)
+        y_pred = model.predict(X_test)
+        y_test = y_test.to_numpy()
 
-    print("Random Forest:")
-    print(f'Mean Squared Error: {round(mse_rf, 3)}')
-    print(f'Root Mean Squared Error: {round(rmse_rf, 3)}')
+        mse = mean_squared_error(y_test, y_pred)
+        rmse = root_mean_squared_error(y_test, y_pred)
+        
+        print("Regression Results for Decision Trees:")
+        print()
+        print(f'Mean Squared Error: {round(mse, 3)}')
+        print(f'Root Mean Squared Error: {round(rmse, 3)}')
+
+    if args.algorithm == "rf":
+        rf_model = RandomForestRegressor(n_estimators=500, random_state=42)
+        rf_model.fit(X_train, y_train)
+        y_pred = rf_model.predict(X_test)
+
+        mse_rf = mean_squared_error(y_test, y_pred)
+        rmse_rf = root_mean_squared_error(y_test, y_pred)
+
+        print("Regression Results for Random Forest:")
+        print()
+        print(f'Mean Squared Error: {round(mse_rf, 3)}')
+        print(f'Root Mean Squared Error: {round(rmse_rf, 3)}')
+
+
+    if args.algorithm == "lr":
+        log_model = LogisticRegression(random_state=42, max_iter = 100)
+        log_model.fit(X_scaled, y_train)
+
+        y_pred = log_model.predict(X_scaled_test)
+
+        mse_log = mean_squared_error(y_test, y_pred)
+        rmse_log = root_mean_squared_error(y_test, y_pred)
+
+        print("Regression Results for Logistic Regression:")
+        print()
+        print(f'Mean Squared Error: {round(mse_log, 3)}')
+        print(f'Root Mean Squared Error: {round(rmse_log, 3)}')
+
+    if args.algorithm == "svr":
+        svr_model = SVR()
+        svr_model.fit(X_scaled, y_train)
+
+        y_pred = svr_model.predict(X_scaled_test)
+
+        mse_svr = mean_squared_error(y_test, y_pred)
+        rmse_svr = root_mean_squared_error(y_test, y_pred)
+
+        print("Regression Results for SVR:")
+        print()
+        print(f'Mean Squared Error: {round(mse_svr, 3)}')
+        print(f'Root Mean Squared Error: {round(rmse_svr, 3)}')
+
+    if args.print_pred:
+        print_prediction(y_pred, y_test)
 
 
 
