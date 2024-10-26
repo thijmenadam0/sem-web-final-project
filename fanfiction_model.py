@@ -219,6 +219,10 @@ def main():
         print(f'Mean Squared Error: {round(mse, 3)}')
         print(f'Root Mean Squared Error: {round(rmse, 3)}')
 
+        data_pred = np.array([y_pred, y_test])
+        dataset = pd.DataFrame({'Predictions': data_pred[0], 'Actual_Values': data_pred[1]})
+        dataset.to_csv('data/predictions_DT.csv', index=False)
+
     if args.algorithm == "rf":
         rf_model = RandomForestRegressor(n_estimators=500, random_state=42)
         rf_model.fit(X_train, y_train)
@@ -231,6 +235,10 @@ def main():
         print()
         print(f'Mean Squared Error: {round(mse_rf, 3)}')
         print(f'Root Mean Squared Error: {round(rmse_rf, 3)}')
+
+        data_pred = np.array([y_pred, y_test])
+        dataset = pd.DataFrame({'Predictions': data_pred[0], 'Actual_Values': data_pred[1]})
+        dataset.to_csv('data/predictions_RF.csv', index=False)
 
 
     if args.algorithm == "lr":
@@ -247,6 +255,10 @@ def main():
         print(f'Mean Squared Error: {round(mse_log, 3)}')
         print(f'Root Mean Squared Error: {round(rmse_log, 3)}')
 
+        data_pred = np.array([y_pred, y_test])
+        dataset = pd.DataFrame({'Predictions': data_pred[0], 'Actual_Values': data_pred[1]})
+        dataset.to_csv('data/predictions_LR.csv', index=False)
+
     if args.algorithm == "svr":
         svr_model = SVR()
         svr_model.fit(X_scaled, y_train)
@@ -261,10 +273,12 @@ def main():
         print(f'Mean Squared Error: {round(mse_svr, 3)}')
         print(f'Root Mean Squared Error: {round(rmse_svr, 3)}')
 
+        data_pred = np.array([y_pred, y_test])
+        dataset = pd.DataFrame({'Predictions': data_pred[0], 'Actual_Values': data_pred[1]})
+        dataset.to_csv('data/predictions_SVR.csv', index=False)
+
     if args.print_pred:
         print_prediction(y_pred, y_test)
-
-
 
 if __name__ == "__main__":
     main()
