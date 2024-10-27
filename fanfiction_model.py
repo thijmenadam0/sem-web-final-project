@@ -29,6 +29,7 @@ def create_arg_parser():
 
     parser = argparse.ArgumentParser()
 
+    # Extra options for the models.
     parser.add_argument("-p", "--print_pred", action="store_true",
                         help="Also prints the predicted and actual values.")
     parser.add_argument("-e", "--exporter", action='store_true',
@@ -39,6 +40,7 @@ def create_arg_parser():
     subparser = parser.add_subparsers(dest="algorithm", required=True,
                                       help="Choose the classifying algorithm to use")
 
+    # Subparser for the SVR
     svr_parser = subparser.add_parser("svr",
                                       help="Use Support Vector Regression as Regression model")
     svr_parser.add_argument("-k", "--kernel", choices=["linear", "poly", "rbf", "sigmoid"], default="rbf",
@@ -49,7 +51,8 @@ def create_arg_parser():
                            help="Choose the gamma (kernel coefficient for rbf, poly and sigmoid) for the SFR")
     svr_parser.add_argument("-C", "--C", type=float, default=1, 
                             help="Set the regularization parameter")
-    
+
+    # Subparser for the Linear SVR
     svrl_parser = subparser.add_parser("svrl",
                                       help="Use Linear Support Vector Regression as Regression model")
     svrl_parser.add_argument("-l", "--loss", choices=["epsilon_insensitive", "squared_epsilon_insensitive"], default="epsilon_insensitive",
@@ -73,16 +76,19 @@ def create_arg_parser():
                                choices=['squared_error', 'absolute_error', 'friedman_mse', 'poisson'], 
                                help="Set the criterion value.")
 
+    # Subparser for the Decision Trees
     dt_parser = subparser.add_parser("dt", parents=[parent_parser],
                                       help="Use Decision Tree Regression as Regression model")
     dt_parser.add_argument("-s", "--splitter", choices=["best", "random"], default="best",
                              help="Set the strategy used to choose the split of each node")
 
+    # Subparser for the Random Forest
     rf_parser = subparser.add_parser("rf", parents=[parent_parser],
                                       help="Use Random Forest Regression as Regression model")
     rf_parser.add_argument("-ne", "--number_estimators", default=100, type=int,
                            help="Pick the number of estimators for the random forest model.")
-    
+
+    # Subparser for Logistic Regression
     lr_parser = subparser.add_parser("lr",
                                      help="Use Logistic Regression as Regression model")
     lr_parser.add_argument("-p", "--penalty", choices=["l1", "l2", "elasticnet", None], default="l2",
@@ -102,7 +108,6 @@ def create_arg_parser():
 
     args = parser.parse_args()
 
-
     return args
 
 
@@ -116,10 +121,59 @@ def print_prediction(prediction, actual):
         print(f'predicted value: {int(prediction[i])} ' + '\t\t\t' + f'actual value: {actual[i]}')
 
 
+def choose_model(args):
+    '''Chooses the model based on the given arguments.
+    Returns the model with hyperparameters, a path where the predictions can be saved
+    and the name of the algorithm.
+    '''
+
+    # The Decision Trees model
+    if args.algorithm == 'dt':
+        alg_name = "Decision Trees Regression"
+        pred_path = 'predictions/dt.csv'
+        model = DecisionTreeRegressor(random_state=42, min_samples_leaf=args.min_samples_leaf,
+                                      min_samples_split=args.min_samples_split, max_depth=args.max_depth, 
+                                      splitter=args.splitter, criterion=args.criterion)
+
+    # The Random Forest models
+    if args.algorithm == 'rf':
+        alg_name = "Random Forest Regression"
+        pred_path = 'predictions/rf.csv'
+        model = RandomForestRegressor(random_state=42, n_estimators=args.number_estimators,
+                                         min_samples_leaf=args.min_samples_leaf, min_samples_split=args.min_samples_split,
+                                         max_depth=args.max_depth, criterion=args.criterion)
+
+    # The Logistic Regression model
+    if args.algorithm == "lr":
+        alg_name = "Logistic Regression"
+        pred_path = 'predictions/lr.csv'
+        model = LogisticRegression(random_state=42, tol=args.tol, C=args.C, penalty=args.penalty,
+                                       class_weight=args.class_weight, solver=args.solver, max_iter=args.max_iter)
+
+    # The SVR model
+    if args.algorithm == "svr":
+        alg_name = "Support Vector Regression"
+        pred_path = 'predictions/svr.csv'
+        model = SVR(kernel=args.kernel, degree=args.degree,
+                        gamma=args.gamma, C=args.C)
+
+    # The Linear SVR model
+    if args.algorithm == "svrl":
+        alg_name = "Linear Support Vector Regression"
+        pred_path = 'predictions/svrl.csv'
+        model = LinearSVR(random_state=42, loss=args.loss, tol=args.tol,
+                              max_iter=args.max_iter, C=args.C)
+
+    return pred_path, model, alg_name
+
+
 def main():
     args = create_arg_parser()
 
+    pred_path, model, algorithm_name = choose_model(args)
+
     # Reads the train/dev/test split; it is 70/20/10 respectively.
+    # As seen in the prepare_data code.
     train = pd.read_csv("data/train.csv")
     dev = pd.read_csv("data/dev.csv")
     test = pd.read_csv("data/test.csv")
@@ -136,175 +190,39 @@ def main():
     X_test = test.drop("kudos", axis=1)
     y_test = test["kudos"]
 
-    # Creates the scalers and scaled data for Logistic Regression and SVR.
+    # Scales the data so it fits the algorithms better.
     scaler = StandardScaler().fit(X_train)
     scaler_dev = StandardScaler().fit(X_dev)
     scaler_test = StandardScaler().fit(X_test)
+    X_train = scaler.transform(X_train)
+    X_dev = scaler_dev.transform(X_dev)
+    X_test = scaler_test.transform(X_test)
 
-    X_scaled = scaler.transform(X_train)
-    X_scaled_dev = scaler_dev.transform(X_dev)
-    X_scaled_test = scaler_test.transform(X_test)
+    model.fit(X_train, y_train)
 
-    # The Decision Trees model
-    if args.algorithm == "dt":
-        pred_path = 'predictions/dt.csv'
+    y_pred = model.predict(X_dev)
+    y_dev = y_dev.to_numpy()
 
-        model = DecisionTreeRegressor(random_state=42, min_samples_leaf=args.min_samples_leaf,
-                                      min_samples_split=args.min_samples_split, max_depth=args.max_depth, 
-                                      splitter=args.splitter, criterion=args.criterion)
+    mse = mean_squared_error(y_dev, y_pred)
+    rmse = root_mean_squared_error(y_dev, y_pred)
 
-        model.fit(X_train, y_train)
+    print(f'Regression Results for {algorithm_name} on the Development set:')
+    print()
+    print(f'Mean Squared Error: {round(mse, 3)}')
+    print(f'Root Mean Squared Error: {round(rmse, 3)}')
 
-        y_pred = model.predict(X_dev)
-        y_dev = y_dev.to_numpy()
+    if args.test:
+        y_pred = model.predict(X_test)
+        y_test = y_test.to_numpy()
 
-        mse = mean_squared_error(y_dev, y_pred)
-        rmse = root_mean_squared_error(y_dev, y_pred)
-        
-        print("Regression Results for Decision Trees on the Development set:")
+        mse = mean_squared_error(y_test, y_pred)
+        rmse = root_mean_squared_error(y_test, y_pred)
+    
+        print()
+        print(f'Regression Results for {algorithm_name} on the Test set:')
         print()
         print(f'Mean Squared Error: {round(mse, 3)}')
         print(f'Root Mean Squared Error: {round(rmse, 3)}')
-
-        if args.test:
-            y_pred = model.predict(X_test)
-            y_test = y_test.to_numpy()
-
-            mse = mean_squared_error(y_test, y_pred)
-            rmse = root_mean_squared_error(y_test, y_pred)
-        
-            print()
-            print("Regression Results for Decision Trees on the Test set:")
-            print()
-            print(f'Mean Squared Error: {round(mse, 3)}')
-            print(f'Root Mean Squared Error: {round(rmse, 3)}')
-
-    # The Random Forest model
-    if args.algorithm == "rf":
-        pred_path = 'predictions/rf.csv'
-        rf_model = RandomForestRegressor(random_state=42, n_estimators=args.number_estimators,
-                                         min_samples_leaf=args.min_samples_leaf, min_samples_split=args.min_samples_split,
-                                         max_depth=args.max_depth, criterion=args.criterion)
-
-        rf_model.fit(X_train, y_train)
-
-        y_pred = rf_model.predict(X_dev)
-        y_dev = y_dev.to_numpy()
-
-        mse = mean_squared_error(y_dev, y_pred)
-        rmse = root_mean_squared_error(y_dev, y_pred)
-        
-        print("Regression Results for Random Forest on the Development set:")
-        print()
-        print(f'Mean Squared Error: {round(mse, 3)}')
-        print(f'Root Mean Squared Error: {round(rmse, 3)}')
-
-        if args.test:
-            y_pred = rf_model.predict(X_test)
-            y_test = y_test.to_numpy()
-
-            mse = mean_squared_error(y_test, y_pred)
-            rmse = root_mean_squared_error(y_test, y_pred)
-
-            print()
-            print("Regression Results for Random Forest on the Test set:")
-            print()
-            print(f'Mean Squared Error: {round(mse, 3)}')
-            print(f'Root Mean Squared Error: {round(rmse, 3)}')
-
-    # The Logistic Regression model
-    if args.algorithm == "lr":
-        pred_path = 'predictions/lr.csv'
-        log_model = LogisticRegression(random_state=42, tol=args.tol, C=args.C, penalty=args.penalty,
-                                       class_weight=args.class_weight, solver=args.solver, max_iter=args.max_iter)
-        log_model.fit(X_scaled, y_train)
-
-        y_pred = log_model.predict(X_scaled_dev)
-        y_dev = y_dev.to_numpy()
-
-        mse = mean_squared_error(y_dev, y_pred)
-        rmse = root_mean_squared_error(y_dev, y_pred)
-        
-        print("Regression Results for Logistic Regression on the Development set:")
-        print()
-        print(f'Mean Squared Error: {round(mse, 3)}')
-        print(f'Root Mean Squared Error: {round(rmse, 3)}')
-
-        if args.test:
-            y_pred = log_model.predict(X_scaled_test)
-            y_test = y_test.to_numpy()
-
-            mse = mean_squared_error(y_test, y_pred)
-            rmse = root_mean_squared_error(y_test, y_pred)
-
-            print()
-            print("Regression Results for Logistic Regression on the Test set:")
-            print()
-            print(f'Mean Squared Error: {round(mse, 3)}')
-            print(f'Root Mean Squared Error: {round(rmse, 3)}')
-
-    # The SVR model.
-    if args.algorithm == "svr":
-        pred_path = 'predictions/svr.csv'
-        svr_model = SVR(kernel=args.kernel, degree=args.degree,
-                        gamma=args.gamma, C=args.C)
-        svr_model.fit(X_scaled, y_train)
-
-        y_pred = svr_model.predict(X_scaled_dev)
-        y_dev = y_dev.to_numpy()
-
-        mse = mean_squared_error(y_dev, y_pred)
-        rmse = root_mean_squared_error(y_dev, y_pred)
-
-        print("Regression Results for SVR on the Development set:")
-        print()
-        print(f'Mean Squared Error: {round(mse, 3)}')
-        print(f'Root Mean Squared Error: {round(rmse, 3)}')
-
-        if args.test:
-            y_pred = svr_model.predict(X_scaled_test)
-            y_test = y_test.to_numpy()
-
-            mse = mean_squared_error(y_test, y_pred)
-            rmse = root_mean_squared_error(y_test, y_pred)
-
-            print()
-            print("Regression Results for SVR on the Test set:")
-            print()
-            print(f'Mean Squared Error: {round(mse, 3)}')
-            print(f'Root Mean Squared Error: {round(rmse, 3)}')
-
-    # The Linear SVR model.
-    if args.algorithm == "svrl":
-        pred_path = 'predictions/svrl.csv'
-        svr_model = LinearSVR(random_state=42, loss=args.loss, tol=args.tol,
-                              max_iter=args.max_iter, C=args.C)
-        svr_model.fit(X_scaled, y_train)
-
-        y_pred = svr_model.predict(X_scaled_dev)
-        y_dev = y_dev.to_numpy()
-
-        mse = mean_squared_error(y_dev, y_pred)
-        rmse = root_mean_squared_error(y_dev, y_pred)
-
-        print("Regression Results for Linear SVR on the Development set:")
-        print()
-        print(f'Mean Squared Error: {round(mse, 3)}')
-        print(f'Root Mean Squared Error: {round(rmse, 3)}')
-
-        if args.test:
-            y_pred = svr_model.predict(X_scaled_test)
-            y_test = y_test.to_numpy()
-
-            mse = mean_squared_error(y_test, y_pred)
-            rmse = root_mean_squared_error(y_test, y_pred)
-
-            print()
-            print("Regression Results for Linear SVR on the Test set:")
-            print()
-            print(f'Mean Squared Error: {round(mse, 3)}')
-            print(f'Root Mean Squared Error: {round(rmse, 3)}')
-
 
     # Prints the predictions based on the test set, if the test set is not given
     # Uses the dev set.
@@ -323,6 +241,7 @@ def main():
 
         dataset = pd.DataFrame({'Predictions': data_pred[0], 'Actual_Values': data_pred[1]})
         dataset.to_csv(pred_path, index=False)
+
 
 if __name__ == "__main__":
     main()
