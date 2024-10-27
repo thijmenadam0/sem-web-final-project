@@ -4,11 +4,9 @@
 #
 
 import re
-import csv
 
 from datetime import datetime
 import pandas as pd
-import numpy as np
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
@@ -102,6 +100,7 @@ def main():
     X = pd.concat([X, Z], axis=1)
     y = df["kudos"]
 
+    # Calculates a 70/20/10 split.
     n = len(X)
     n_train = int(n * 0.7)
     n_dev = int(n * 0.2)

@@ -4,7 +4,6 @@
 #
 
 import re
-import csv
 
 from datetime import datetime
 import pandas as pd
@@ -36,11 +35,7 @@ def read_write_data():
     '''Reads the SPARQL output and writes updated data to a file, including the difference in
     months and an accumulation of keywords.
     '''
-    # File paths
-    input_csv = 'data/trajectory_love.csv'  # Input CSV file path
-    output_csv = 'data/data_rep.csv'  # Output CSV file path
-
-    df = pd.read_csv(input_csv)
+    df = pd.read_csv('data/trajectory_love.csv')
 
     # Creates a a updated dataframe aggregated by ID,
     # Makes a set of unique keywords that each ID has.
@@ -69,7 +64,7 @@ def read_write_data():
     grouped_df['up_time'] = up_times
 
     # If you want the CSV dataframe as well
-    # grouped_df.to_csv(output_csv, index=False)
+    # grouped_df.to_csv('data/data_rep.csv', index=False)
 
     return grouped_df
 
@@ -79,7 +74,8 @@ def create_word2vec(df, columns, vector_size=100, window=5, min_count=1):
     for column in columns:
         tokenized_column = df[column].apply(lambda x: str(x).split())
 
-        model = Word2Vec(sentences=tokenized_column, vector_size=vector_size, window=window, min_count=min_count)
+        model = Word2Vec(sentences=tokenized_column, vector_size=vector_size,
+                         window=window, min_count=min_count)
 
         df[column] = tokenized_column.apply(lambda tokens: model.wv[tokens].mean(axis=0) if tokens else [0] * vector_size)
 
@@ -120,6 +116,7 @@ def main():
     X = pd.concat([X, Z], axis=1)
     y = df["kudos"]
 
+    # Calculates a 70/20/10 split.
     n = len(X)
     n_train = int(n * 0.7)
     n_dev = int(n * 0.2)
