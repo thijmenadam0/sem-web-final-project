@@ -78,6 +78,7 @@ def read_write_data():
 from gensim.models import Word2Vec
 
 def create_word2vec(df, columns, vector_size=100, window=5, min_count=1):
+    '''Takes a list a df and list of columns as input and creates Word2Vec representations for the specified columns'''
     for column in columns:
         tokenized_column = df[column].apply(lambda x: str(x).split())
 
@@ -88,6 +89,7 @@ def create_word2vec(df, columns, vector_size=100, window=5, min_count=1):
     return df
 
 def array_to_value(df_transformed):
+  '''Takes a df with arrays of number as input and creates mean, max, and min values for the columns specified in the funtion'''
   
   df_transformed['keywords_mean'] = df_transformed['keyword'].apply(np.mean)
   df_transformed['keywords_max'] = df_transformed['keyword'].apply(np.max)
@@ -133,7 +135,7 @@ def main():
     dev = pd.concat([X_dev, y_dev], axis=1)
     test = pd.concat([X_test, y_test], axis=1)
     train.to_csv('data/train_wTv.csv', index=False)
-    dev.to_csv('data/dev-wTv.csv', index=False)
+    dev.to_csv('data/dev_wTv.csv', index=False)
     test.to_csv('data/test_wTv.csv', index=False)
 
 
