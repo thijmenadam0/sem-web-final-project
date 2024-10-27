@@ -9,9 +9,8 @@ import csv
 from datetime import datetime
 import pandas as pd
 import numpy as np
-from pandas.io import xml
+from gensim.models import Word2Vec
 
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 
 
@@ -74,8 +73,6 @@ def read_write_data():
 
     return grouped_df
 
-
-from gensim.models import Word2Vec
 
 def create_word2vec(df, columns, vector_size=100, window=5, min_count=1):
     '''Takes a list a df and list of columns as input and creates Word2Vec representations for the specified columns'''

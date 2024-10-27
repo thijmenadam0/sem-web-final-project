@@ -36,11 +36,7 @@ def read_write_data():
     '''Reads the SPARQL output and writes updated data to a file, including the difference in
     months and an accumulation of keywords.
     '''
-    # File paths
-    input_csv = 'data/trajectory_love.csv'  # Input CSV file path
-    output_csv = 'data/data_rep.csv'  # Output CSV file path
-
-    df = pd.read_csv(input_csv)
+    df = pd.read_csv('data/trajectory_love.csv')
 
     # Creates a a updated dataframe aggregated by ID,
     # Makes a set of unique keywords that each ID has.
@@ -68,36 +64,29 @@ def read_write_data():
         up_times.append(months_difference(published, packaged))
     grouped_df['up_time'] = up_times
 
-    # If you want the CSV dataframe as well
-    # grouped_df.to_csv(output_csv, index=False)
+    # If you want the CSV dataframe as well uncomment the following line
+    # grouped_df.to_csv('data/data_rep.csv', index=False)
 
     return grouped_df
 
 
 def create_tfidf_data(df):
     '''Creates tfidf columns for keywords, rating, contentWarning and romanticCategory'''
-    columns_to_process = ['keyword', 'rating', 'contentWarning', 'romanticCategory']  # Update with your column names
+    columns_to_process = ['keyword', 'rating', 'contentWarning', 'romanticCategory']
 
-    # Choose the TF-idf vectorizer
+    # prepare_data.py is for the tfidf Vectorizer. prepare_data_wTv.py uses Word2Vec.
     vectorizer = TfidfVectorizer()
 
     for col in columns_to_process:
-        documents = df[col].dropna().tolist()  # Also drops NaN values
+        documents = df[col].dropna().tolist()
         documents = [' '.join(doc.split(',')) for doc in documents]
 
-        # Compute TF-IDF for a column
         tfidf_matrix = vectorizer.fit_transform(documents)
-
-        # Convert the TF-IDF matrix to a DataFrame
         tfidf_df = pd.DataFrame(tfidf_matrix.toarray(), columns=vectorizer.get_feature_names_out())
-
-        # Drop rows in the original DataFrame where the column has NaN, to match the TF-IDF result shape
         df_non_na = df[col].dropna().index
-
-        # Overwrite the original column with the sum of the TF-IDF weights per row
         df.loc[df_non_na, col] = tfidf_df.sum(axis=1).values
 
-    # If you want to download the tfidf dataframe
+    # If you want to download the tfidf dataframe uncomment the following line
     # df.to_csv('data/tfidf_rep.csv', index=False)
     
     return df
@@ -121,9 +110,11 @@ def main():
     X_train, X_remaining, y_train, y_remaining = train_test_split(X, y, train_size=n_train, random_state=10)
     X_dev, X_test, y_dev, y_test = train_test_split(X_remaining, y_remaining, test_size=n_test, random_state=10)
 
+    # Concatenates the data so its all in one file.
     train = pd.concat([X_train, y_train], axis=1)
     dev = pd.concat([X_dev, y_dev], axis=1)
     test = pd.concat([X_test, y_test], axis=1)
+
     train.to_csv('data/train.csv', index=False)
     dev.to_csv('data/dev.csv', index=False)
     test.to_csv('data/test.csv', index=False)
