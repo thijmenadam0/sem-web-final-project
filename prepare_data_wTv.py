@@ -81,6 +81,7 @@ def create_word2vec(df, columns, vector_size=100, window=5, min_count=1):
 
     return df
 
+
 def array_to_value(df_transformed):
   '''Takes a df with arrays of number as input and creates mean, max, and min values for the columns specified in the funtion'''
   
@@ -104,6 +105,7 @@ def array_to_value(df_transformed):
 
   return df_transformed
 
+
 def main():
     df = read_write_data()
     columns_to_transform = ['keyword', 'rating', 'contentWarning', 'romanticCategory']
@@ -115,6 +117,10 @@ def main():
 
     X = pd.concat([X, Z], axis=1)
     y = df["kudos"]
+
+    # Also writes all X and Y to files for the SHAP test.
+    X.to_csv('data/all_X_wTv.csv', index=False)
+    y.to_csv('data/all_y_wTv.csv', index=False)
 
     # Calculates a 70/20/10 split.
     n = len(X)

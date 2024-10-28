@@ -100,6 +100,10 @@ def main():
     X = pd.concat([X, Z], axis=1)
     y = df["kudos"]
 
+    # Also writes all X and Y to files for the SHAP test.
+    X.to_csv('data/all_X.csv', index=False)
+    y.to_csv('data/all_y.csv', index=False)
+
     # Calculates a 70/20/10 split.
     n = len(X)
     n_train = int(n * 0.7)
