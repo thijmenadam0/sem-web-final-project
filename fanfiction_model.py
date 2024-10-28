@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.svm import SVR, LinearSVR
 from sklearn.ensemble import RandomForestRegressor
@@ -36,6 +36,9 @@ def create_arg_parser():
                         help="Also exports the predictions to a .csv file")
     parser.add_argument("-t", "--test", action='store_true',
                         help="Makes it so the model also predicts on the test files.")
+    parser.add_argument("-v", "--vectorizer", choices=["tfidf", "wTv"], default="tfidf",
+                        help="Choose the vectorized data you want to use, either Word2Vec or Tfidf "
+                        "The data should be prepared with either prepare_data files.")
     
     subparser = parser.add_subparsers(dest="algorithm", required=True,
                                       help="Choose the classifying algorithm to use")
@@ -88,23 +91,11 @@ def create_arg_parser():
     rf_parser.add_argument("-ne", "--number_estimators", default=100, type=int,
                            help="Pick the number of estimators for the random forest model.")
 
-    # Subparser for Logistic Regression
+    # Subparser for Linear Regression
     lr_parser = subparser.add_parser("lr",
-                                     help="Use Logistic Regression as Regression model")
-    lr_parser.add_argument("-p", "--penalty", choices=["l1", "l2", "elasticnet", None], default="l2",
-                           help="Choose the penalty function")
-    lr_parser.add_argument("-C", "--C", default=1e-4, type=float,
-                           help="Set the C parameter")
-    lr_parser.add_argument("-mi", "--max_iter", default=100, type=int,
-                           help="Set the maximum amount of iterations.")
-    lr_parser.add_argument("-t", "--tol", default=1, type=float,
-                           help="Set the tolerance for stopping parameter")
-    lr_parser.add_argument("-cw", "--class_weight", choices=["balanced", None], default=None,
-                           help="Pick wether the class weight should be balanced or not.")
-    lr_parser.add_argument("-so", "--solver", choices=['lbfgs', 'liblinear',
-                                                       'newton-cg', 'newton-cholesky',
-                                                       'sag', 'saga'], default='lbfgs',
-                           help="Pick a solver, read the scikit learn documentation for information on how to decide which to use.")
+                                     help="Use Linear Regression as Regression model")
+    lr_parser.add_argument("-fi", "--fit_intercept", choices=[True, False], default=True,
+                           help="Choose whether to calculate the intercept for this model")
 
     args = parser.parse_args()
 
@@ -143,12 +134,11 @@ def choose_model(args):
                                          min_samples_leaf=args.min_samples_leaf, min_samples_split=args.min_samples_split,
                                          max_depth=args.max_depth, criterion=args.criterion)
 
-    # The Logistic Regression model
+    # The Linear Regression model
     if args.algorithm == "lr":
-        alg_name = "Logistic Regression"
+        alg_name = "Linear Regression"
         pred_path = 'predictions/lr.csv'
-        model = LogisticRegression(random_state=42, tol=args.tol, C=args.C, penalty=args.penalty,
-                                       class_weight=args.class_weight, solver=args.solver, max_iter=args.max_iter)
+        model = LinearRegression(fit_intercept=args.fit_intercept)
 
     # The SVR model
     if args.algorithm == "svr":
@@ -173,10 +163,15 @@ def main():
     pred_path, model, algorithm_name = choose_model(args)
 
     # Reads the train/dev/test split; it is 70/20/10 respectively.
-    # As seen in the prepare_data code.
-    train = pd.read_csv("data/train.csv")
-    dev = pd.read_csv("data/dev.csv")
-    test = pd.read_csv("data/test.csv")
+    # As seen in either of the prepare_data code.
+    if args.vectorizer == "tfidf":
+        train = pd.read_csv("data/train.csv")
+        dev = pd.read_csv("data/dev.csv")
+        test = pd.read_csv("data/test.csv")
+    if args.vectorizer == "wTv":
+        train = pd.read_csv("data/train_wTv.csv")
+        dev = pd.read_csv("data/dev-wTv.csv")
+        test = pd.read_csv("data/test_wTv.csv")
 
     # Creates x and y train
     X_train = train.drop("kudos", axis=1)
