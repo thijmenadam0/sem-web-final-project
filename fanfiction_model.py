@@ -36,9 +36,11 @@ def create_arg_parser():
                         help="Also exports the predictions to a .csv file")
     parser.add_argument("-t", "--test", action='store_true',
                         help="Makes it so the model also predicts on the test files.")
-    parser.add_argument("-v", "--vectorizer", choices=["tfidf", "wTv"], default="tfidf",
-                        help="Choose the vectorized data you want to use, either Word2Vec or Tfidf "
+    parser.add_argument("-v", "--vectorizer", choices=["tfidf", "wTv", "mix"], default="tfidf",
+                        help="Choose the vectorized data you want to use, either Word2Vec or Tfidf or a mix of both "
                         "The data should be prepared with either prepare_data files.")
+    parser.add_argument("-L", "--log_transformed", action='store_true',
+                        help="Choose whether the data used in log transformed or not.")
     
     subparser = parser.add_subparsers(dest="algorithm", required=True,
                                       help="Choose the classifying algorithm to use")
@@ -170,8 +172,12 @@ def main():
         test = pd.read_csv("data/test.csv")
     if args.vectorizer == "wTv":
         train = pd.read_csv("data/train_wTv.csv")
-        dev = pd.read_csv("data/dev-wTv.csv")
+        dev = pd.read_csv("data/dev_wTv.csv")
         test = pd.read_csv("data/test_wTv.csv")
+    if args.vectorizer == "mix":
+        train = pd.read_csv("data/train_mix.csv")
+        dev = pd.read_csv("data/dev_mix.csv")
+        test = pd.read_csv("data/test_mix.csv")
 
     # Creates x and y train
     X_train = train.drop("kudos", axis=1)
@@ -198,8 +204,16 @@ def main():
     y_pred = model.predict(X_dev)
     y_dev = y_dev.to_numpy()
 
-    mse = mean_squared_error(y_dev, y_pred)
-    rmse = root_mean_squared_error(y_dev, y_pred)
+    if args.log_transformed:
+        y_pred_inverted = np.exp(y_pred)
+        y_dev_inverted = np.exp(y_dev)
+
+        mse = mean_squared_error(y_dev_inverted, y_pred_inverted)
+        rmse = root_mean_squared_error(y_dev_inverted, y_pred_inverted)
+
+    else:
+        mse = mean_squared_error(y_dev, y_pred)
+        rmse = root_mean_squared_error(y_dev, y_pred)
 
     print(f'Regression Results for {algorithm_name} on the Development set:')
     print()
@@ -209,9 +223,18 @@ def main():
     if args.test:
         y_pred = model.predict(X_test)
         y_test = y_test.to_numpy()
+        
+        if args.log_transformed:
+            y_pred_inverted = np.exp(y_pred)
+            y_test_inverted = np.exp(y_test)
 
-        mse = mean_squared_error(y_test, y_pred)
-        rmse = root_mean_squared_error(y_test, y_pred)
+            mse = mean_squared_error(y_test_inverted, y_pred_inverted)
+            rmse = root_mean_squared_error(y_test_inverted, y_pred_inverted)
+
+        else:
+            mse = mean_squared_error(y_test, y_pred)
+            rmse = root_mean_squared_error(y_test, y_pred)
+        
     
         print()
         print(f'Regression Results for {algorithm_name} on the Test set:')
