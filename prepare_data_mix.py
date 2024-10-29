@@ -4,6 +4,7 @@
 #
 
 import re
+import argparse
 
 from datetime import datetime
 import pandas as pd
@@ -15,6 +16,21 @@ from sklearn.model_selection import train_test_split
 
 from sklearn.impute import SimpleImputer
 
+
+def create_arg_parser():
+    '''Creates an argument parser to read the command line arguments.
+    This includes subparsers for the different models.
+    '''
+
+    parser = argparse.ArgumentParser()
+
+    # Extra options for the models.
+    parser.add_argument("-L", "--log_transform", action="store_true",
+                        help="Choose whether to log transform and drop outliers from data.")
+
+    args = parser.parse_args()
+
+    return args
 
 def months_difference(date1, date2):
     '''Calculates the difference in months between two dates.'''
@@ -186,23 +202,35 @@ def alter_df(df):
   return df
 
 def main():
+    args = create_arg_parser()
+
     df = read_write_data()
     tfidf_df = create_tfidf_data(df)
-    tfidf_df = alter_df(tfidf_df)
+
+    if args.log_transform:
+      tfidf_df = alter_df(tfidf_df)
 
     Z = tfidf_df.loc[:, ['romanticCategory', 'rating', 'contentWarning']]
 
     columns_to_transform = ['keyword', 'rating', 'contentWarning', 'romanticCategory']
     df_wTv = create_word2vec(df, columns_to_transform)
     df_wTv = array_to_value(df_wTv)
-    df_wTv = alter_df(df_wTv)
+
+    if args.log_transform:
+      df_wTv = alter_df(df_wTv)
     
     X = df.loc[:, ['words', 'amount_keywords', 'up_time']]
-    X = alter_df(X)
+
+    if args.log_transform:
+      X = alter_df(X)
     
     X = pd.concat([X, df_wTv, Z], axis=1)
-    y = alter_df(df)
-    y = y["kudos"]
+
+    if args.log_transform:
+      y = alter_df(df)
+      y = y["kudos"]
+    else:
+      y = df["kudos"]
 
     # Also writes all X and Y to files for the SHAP test.
     X.to_csv('data/all_X_mix.csv', index=False)
