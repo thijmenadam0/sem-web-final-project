@@ -236,7 +236,6 @@ def main():
 
         if args.log_transform:
             X = alter_df(X)
-
         X = pd.concat([X, Z], axis=1)
 
         if args.log_transform:
@@ -244,10 +243,6 @@ def main():
             y = y["kudos"]
         else:
             y = df["kudos"]
-
-        # Also writes all X and Y to files for the SHAP test.
-        X.to_csv('data/all_X.csv', index=False)
-        y.to_csv('data/all_y.csv', index=False)
 
         # Calculates a 70/20/10 split.
         n = len(X)
@@ -267,12 +262,20 @@ def main():
             train.to_csv('data/train_log.csv', index=False)
             dev.to_csv('data/dev_log.csv', index=False)
             test.to_csv('data/test_log.csv', index=False)
+
+            # Also writes all X and Y to files for the SHAP test.
+            X.to_csv('data/all_X_log.csv', index=False)
+            y.to_csv('data/all_y_log.csv', index=False)
         
         else:
             train.to_csv('data/train.csv', index=False)
             dev.to_csv('data/dev.csv', index=False)
             test.to_csv('data/test.csv', index=False)
-    
+
+            # Also writes all X and Y to files for the SHAP test.
+            X.to_csv('data/all_X.csv', index=False)
+            y.to_csv('data/all_y.csv', index=False)
+
     if args.vectorizer == 'w2v': 
         df_wTv = create_word2vec(df, columns_to_transform)
         df_wTv = array_to_value(df_wTv)
@@ -291,10 +294,6 @@ def main():
         else:
             y = df["kudos"]
 
-        # Also writes all X and Y to files for the SHAP test.
-        X.to_csv('data/all_X_wTv.csv', index=False)
-        y.to_csv('data/all_y_wTv.csv', index=False)
-
         # Calculates a 70/20/10 split.
         n = len(X)
         n_train = int(n * 0.7)
@@ -312,11 +311,18 @@ def main():
             train.to_csv('data/train_wTv_log.csv', index=False)
             dev.to_csv('data/dev_wTv_log.csv', index=False)
             test.to_csv('data/test_wTv_log.csv', index=False)
+            # Also writes all X and Y to files for the SHAP test.
+            X.to_csv('data/all_X_wTv_log.csv', index=False)
+            y.to_csv('data/all_y_wTv_log.csv', index=False)
 
         else:
             train.to_csv('data/train_wTv.csv', index=False)
             dev.to_csv('data/dev_wTv.csv', index=False)
             test.to_csv('data/test_wTv.csv', index=False)
+
+            # Also writes all X and Y to files for the SHAP test.
+            X.to_csv('data/all_X_wTv.csv', index=False)
+            y.to_csv('data/all_y_wTv.csv', index=False)
 
     if args.vectorizer =='mix':
         tfidf_df = create_tfidf_data(df)
@@ -365,10 +371,18 @@ def main():
             dev.to_csv('data/dev_mix_log.csv', index=False)
             test.to_csv('data/test_mix_log.csv', index=False)
 
+            # Also writes all X and Y to files for the SHAP test.
+            X.to_csv('data/all_X_mix_log.csv', index=False)
+            y.to_csv('data/all_y_mix_log.csv', index=False)
+
         else:
             train.to_csv('data/train_mix.csv', index=False)
             dev.to_csv('data/dev_mix.csv', index=False)
             test.to_csv('data/test_mix.csv', index=False)
+
+            # Also writes all X and Y to files for the SHAP test.
+            X.to_csv('data/all_X_mix.csv', index=False)
+            y.to_csv('data/all_y_mix.csv', index=False)
 
 
 if __name__ == "__main__":
