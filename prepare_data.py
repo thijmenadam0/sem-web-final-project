@@ -150,30 +150,21 @@ def array_to_value(df_transformed):
 
 def handle_outliers_with_imputer(df, threshold=1.5, impute_strategy='median'):
     """
-    Detects outliers based on the IQR method for each column, replaces them with NaN, 
-    and fills NaNs using a SimpleImputer.
-
-    Parameters:
-        df (pd.DataFrame): Input DataFrame.
-        threshold (float): Multiplier for the IQR range. Default is 1.5.
-        impute_strategy (str): Strategy for imputation ('mean', 'median', 'most_frequent', or 'constant').
-
-    Returns:
-        pd.DataFrame: DataFrame with outliers handled and NaNs filled.
+    Input is a dataframe and the output is the same dataframe that has its outliers (using the IQR method)
+    replaced with NaN values
     """
-    # Make a copy of the dataframe to avoid modifying the original
     df_out = df.copy()
     
-    # Step 1: Replace outliers with NaN
-    for col in df_out.select_dtypes(include=[np.number]):  # Apply only to numeric columns
-        Q1 = df_out[col].quantile(0.25)
-        Q3 = df_out[col].quantile(0.75)
+    #Replace outliers with NaN
+    for col in df_out.select_dtypes(include=[np.number]):
+        Q1 = df_out[col].quantile(0)
+        Q3 = df_out[col].quantile(0.85)
         IQR = Q3 - Q1
         lower_bound = Q1 - threshold * IQR
         upper_bound = Q3 + threshold * IQR
         df_out[col] = np.where((df_out[col] < lower_bound) | (df_out[col] > upper_bound), np.nan, df_out[col])
     
-    # Step 2: Impute NaN values
+    #Impute NaN values
     imputer = SimpleImputer(strategy=impute_strategy)
     df_out[df_out.select_dtypes(include=[np.number]).columns] = imputer.fit_transform(df_out.select_dtypes(include=[np.number]))
     
@@ -182,31 +173,20 @@ def handle_outliers_with_imputer(df, threshold=1.5, impute_strategy='median'):
 
 def log_transform(df, columns=None, zero_replacement=0.001):
     """
-    Apply log transformation to specified columns of a DataFrame, replacing zeroes with a small positive value.
-    
-    Parameters:
-    - df (pd.DataFrame): The input DataFrame.
-    - columns (list): Optional list of columns to transform. 
-                      If None, all numeric columns will be transformed.
-    - zero_replacement (float): Value to replace zero entries with (default is 1).
-
-    Returns:
-    - pd.DataFrame: A new DataFrame with log-transformed columns.
+    Input is a dataframe and the output is the same dataframe which has been log-transformed
     """
-    # Select columns to transform: all numeric columns if `columns` is None
     if columns is None:
         columns = df.select_dtypes(include=[np.number]).columns
     
-    # Copy the DataFrame to avoid modifying the original one
     df_transformed = df.copy()
     
-    # Apply log transformation to each selected column
+    #Apply log transformation to each selected column
     for col in columns:
-        # Replace zeroes with a small positive value
+        #Replace zeroes and negative values with a small positive value
         df_transformed[col] = df_transformed[col].replace(0, zero_replacement)
         df_transformed[col] = df_transformed[col].apply(lambda x: zero_replacement if x < 0 else x)
         
-        # Apply log transformation
+        #Apply log transformation
         df_transformed[col] = np.log(df_transformed[col])
 
     return df_transformed
