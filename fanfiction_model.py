@@ -179,6 +179,19 @@ def main():
         dev = pd.read_csv("data/dev_mix.csv")
         test = pd.read_csv("data/test_mix.csv")
 
+    if args.vectorizer == "tfidf" and args.log_transformed == True:
+        train = pd.read_csv("data/train_log.csv")
+        dev = pd.read_csv("data/dev_log.csv")
+        test = pd.read_csv("data/test_log.csv")
+    if args.vectorizer == "wTv" and args.log_transformed == True:
+        train = pd.read_csv("data/train_wTv_log.csv")
+        dev = pd.read_csv("data/dev_wTv_log.csv")
+        test = pd.read_csv("data/test_wTv_log.csv")
+    if args.vectorizer == "mix" and args.log_transformed == True:
+        train = pd.read_csv("data/train_mix_log.csv")
+        dev = pd.read_csv("data/dev_mix_log.csv")
+        test = pd.read_csv("data/test_mix_log.csv")
+
     # Creates x and y train
     X_train = train.drop("kudos", axis=1)
     y_train = train["kudos"]
