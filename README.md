@@ -9,12 +9,20 @@ pip install -r requirements.txt
 ## Data Preparation
 The data used for this project can be found in the trajectory_love.csv file. It is data obtained from the GOLEM dataset (https://golemlab.eu/), which is a dataset based on fanfiction. This research uses data where fanfiction stories are tagged with trajectory love keywords. These are keywords like 'Enemies to Lovers', 'Friends to Lovers' and 'Eventual Romance'.
 
-After installing the requirements you have to run the prepare_data.py file, to obtain a train, dev and test file. These are already included on the GitHub, they are created with a tf-idf vectorizer.
-You can also run the prepare_data_wTv.py file to get the train, dev and test files for a word2vec vectorizer.
+After installing the requirements you have to run the prepare_data.py file at least once to obtain a train, dev and test file. The command below shows the help command, to see all possible uses of this file. The prepare data file can prepare a lot of data, but all of this is included on the GitHub.
 ```
-python3 prepare_data.py
-python3 prepare_data_wTv.py
+python3 prepare_data.py -h
+
+usage: prepare_data.py [-h] [-L] [-v {tfidf,w2v,mix}]
+
+options:
+  -h, --help            show this help message and exit
+  -L, --log_transform   Choose whether to log transform and drop outliers from data.
+  -v {tfidf,w2v,mix}, --vectorizer {tfidf,w2v,mix}
+                        Choose the vectorizer that is used on the textual features in the data.
 ```
+
+
 
 You now have succesfully created the train, dev and test files in a 70, 20, 10 split respectively.
 
@@ -30,7 +38,7 @@ python3 fanfiction_model.py -h
 This is the help command and shows all possible input parameters. It also makes clear that you need to input a model for the code to run. The model choices are stated above and their abbreviations for this program are dt, rf, lr, svrl and svr respectively. 
 
 ```
-usage: fanfiction_model.py [-h] [-p] [-e] [-t] [-v {tfidf,wTv}] {svr,svrl,dt,rf,lr} ...
+usage: fanfiction_model.py [-h] [-p] [-e] [-t] [-v {tfidf,wTv,mix}] [-L] {svr,svrl,dt,rf,lr} ...
 
 positional arguments:
   {svr,svrl,dt,rf,lr}   Choose the classifying algorithm to use
@@ -38,16 +46,18 @@ positional arguments:
     svrl                Use Linear Support Vector Regression as Regression model
     dt                  Use Decision Tree Regression as Regression model
     rf                  Use Random Forest Regression as Regression model
-    lr                  Use Logistic Regression as Regression model
+    lr                  Use Linear Regression as Regression model
 
 options:
   -h, --help            show this help message and exit
   -p, --print_pred      Also prints the predicted and actual values.
   -e, --exporter        Also exports the predictions to a .csv file
   -t, --test            Makes it so the model also predicts on the test files.
-  -v {tfidf,wTv}, --vectorizer {tfidf,wTv}
-                        Choose the vectorized data you want to use, either Word2Vec or Tfidf The data should be prepared with either
-                        prepare_data files.
+  -v {tfidf,wTv,mix}, --vectorizer {tfidf,wTv,mix}
+                        Choose the vectorized data you want to use, either Word2Vec or Tfidf or a mix of both The data
+                        should be prepared with either prepare_data files.
+  -L, --log_transformed
+                        Choose whether the data used in log transformed or not.
 ```
 
 
