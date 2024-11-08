@@ -26,7 +26,8 @@ def create_arg_parser():
     # Extra options for the models.
     parser.add_argument("-L", "--log_transform", action="store_true",
                         help="Choose whether to log transform and drop outliers from data.")
-    parser.add_argument("-v", "--vectorizer", choices=['tfidf', 'w2v', 'mix'], default='tfidf')
+    parser.add_argument("-v", "--vectorizer", choices=['tfidf', 'w2v', 'mix'], default='tfidf',
+                        help="Choose the vectorizer that is used on the textual features in the data.")
 
     args = parser.parse_args()
 
