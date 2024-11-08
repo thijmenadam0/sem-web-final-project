@@ -1,5 +1,5 @@
 # Trajectory Love in Fanfiction
-This GitHub contains the code for the final project for the course Semantic Web Technology at the RUG.
+This GitHub contains the code for the final project for the course Semantic Web Technology at the RUG. It also contains visualization notebooks for SHAP and data visualization, these are only important for our own experiments and not for running the rest of the code.
 
 To run the code you first need to install the requirements
 ```
